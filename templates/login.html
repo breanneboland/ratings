@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+
+    <form action="/loginfo" method="POST">
+        <label id="login-id">Login ID:
+            <input type="text" name="email">
+        </label>
+        <label id="password">Password: 
+            <input type="password" name="password">
+        </label>
+
+        <input type="submit" id="submit_login_button">
+    </form>
+
+{% endblock %}
