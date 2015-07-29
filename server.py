@@ -39,7 +39,7 @@ def login_page():
     return render_template("login.html")
 
 @app.route('/loginfo', methods=["POST"])
-def logs_you_in(user_id):
+def logs_you_in():
     """Redirects the user after they've logged in"""
     
     email_value = request.form.get("email")
@@ -65,12 +65,26 @@ def logs_you_in(user_id):
             flash("Password and login don't match. Try again!")
             return render_template('login.html')
     
-    user_id = user_query.user_id
-    return redirect('/user/<int:user_id>')
+    user = User.query.filter_by(email = email_value).first()
+    user_id = user.user_id
+    return redirect('/users/<int:user_id>',
+                    user_id = user_id)
 
-#Need to make the user information page. Need to nail down the finer points of the URL above this line.
-#(Establishing variable, making sure it's passed, inheritance, etc.) Basically, start at User Details.
-#Then onto Movie List.
+#user_id is being correctly assigned. The problem is that it isn't being passed in a way that the URL
+#can pick it up. Last error: TypeError: redirect() got an unexpected keyword argument 'user_id'
+
+@app.route('/users/<int:user_id>')
+def user_profile(user_id):
+    user_query = User.query.get(user_id)
+    age = user_query.age
+    zipcode = user_query.zipcode
+    movie_list = db.session.query(Movie.title, Rating.score).join(Rating).filter(Rating.user_id == user_id).all()
+
+    return render_template("user_details.html", age = age,
+                            zipcode = zipcode,
+                            movie_list = movie_list,
+                            user_id = user_id
+                            )
 
 @app.route('/logout')
 def logs_you_out():
