@@ -96,10 +96,23 @@ def list_movies():
     return render_template("movie_list.html", 
                             movie_title_list = movie_title_list)
 
-    # Query to get a list of all movies
-    # Order them by title
-    # Pass list/tuple/whatever to page
-    # Jinja: for loop to create entries for each movie with year and constructed URL to to-be-made detail page
+@app.route('/movie/<int:movie_id>')
+def make_movie_detail_page(movie_id):
+    
+    movie_information = db.session.query(Movie.title, Movie.release_date, Movie.imdb_url).filter_by(movie_id = movie_id).all() 
+
+    ratings = db.session.query(Rating.score).filter_by(movie_id = movie_id).all()
+
+    return render_template("movie_details.html", movie_information=movie_information, ratings=ratings)
+
+
+
+    # Get movie ID from URL
+    # Make loop in Python to create a crapton of movie pages using the movie ID
+    # Make reusable query to get movie information and its rating information
+    # Make Jinja framework 
+    # Show information plus all ratings the movie has received
+
 
 
 
