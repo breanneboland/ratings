@@ -12,6 +12,7 @@ app = Flask(__name__)
 
 # Required to use Flask sessions and the debug toolbar
 app.secret_key = "ABC"
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 # Normally, if you use an undefined variable in Jinja2, it fails silently.
 # This is horrible. Fix this so that, instead, it raises an error.
@@ -38,33 +39,44 @@ def login_page():
     return render_template("login.html")
 
 @app.route('/loginfo', methods=["POST"])
-def logs_you_in():
+def logs_you_in(user_id):
     """Redirects the user after they've logged in"""
     
-    email = request.form.get("email")
+    email_value = request.form.get("email")
     password = request.form.get("password")
+    user_query = User.query.filter_by(email = email_value).first()
+    #Queries the User db to see if there's an email equal to the input from the user
+    print user_query
+    # print user_query.password
 
-    if email in User.query.all():
-        #flash message logged-in
-        #put in session
-        flash("You're logged in! Great!")
-        session['email'] = email
-        return redirect('/')
-    else:
-        #flash message - we created an account for you & logged you in
-        #put in session
-        #put in DB
+    if user_query == None:
         flash("We created an account for you with given email and pw - and you're logged in! Oh yeah!")
 
-        session['email'] = email
+        session['email'] = email_value
 
-        new_user = User(email=email, password=password)
+        new_user = User(email=email_value, password=password)
         db.session.add(new_user)
         db.session.commit()
+    else:
+        if user_query.password == password:
+            flash("You're logged in! Great!")
+            session['email'] = email_value
+        else: 
+            flash("Password and login don't match. Try again!")
+            return render_template('login.html')
+    
+    user_id = user_query.user_id
+    return redirect('/user/<int:user_id>')
 
-        return redirect('/')
-        #Logs you in, but there's some sort of error happening. Unsure if it actually commits to DB. 
-        #Next on the list after that: log out and redirect to the user's details page
+#Need to make the user information page. Need to nail down the finer points of the URL above this line.
+#(Establishing variable, making sure it's passed, inheritance, etc.) Basically, start at User Details.
+#Then onto Movie List.
+
+@app.route('/logout')
+def logs_you_out():
+    del session['email']
+    flash("You're logged out. Bye!")
+    return redirect('/')
 
 if __name__ == "__main__":
     # We have to set debug=True here, since it has to be True at the point
