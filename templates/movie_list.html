@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+
+    <h2>Movies: All of Them</h2>
+    <ul>
+      {% for movie in movie_title_list %}
+          <li>
+              <i>{{ movie.title }}</i>: 
+              {{ movie.release_date.year }}. <a href="/movie/{{ movie.movie_id }}">More information</a>
+          </li>
+      {% endfor %}
+    </ul>
+
+{% endblock %}

@@ -67,14 +67,17 @@ def logs_you_in():
     
     user = User.query.filter_by(email = email_value).first()
     user_id = user.user_id
-    return redirect('/users/<int:user_id>',
-                    user_id = user_id)
+    return redirect('users/' + str(user_id))
 
 #user_id is being correctly assigned. The problem is that it isn't being passed in a way that the URL
 #can pick it up. Last error: TypeError: redirect() got an unexpected keyword argument 'user_id'
 
 @app.route('/users/<int:user_id>')
 def user_profile(user_id):
+    """
+    Arrived at via login, signup, or directly from listed users page. Lists user's user ID and 
+    zipcode. Fancy!
+    """
     user_query = User.query.get(user_id)
     age = user_query.age
     zipcode = user_query.zipcode
@@ -85,6 +88,20 @@ def user_profile(user_id):
                             movie_list = movie_list,
                             user_id = user_id
                             )
+
+@app.route('/movies')
+def list_movies():
+    movie_title_list = db.session.query(Movie.movie_id, Movie.title, Movie.release_date).order_by(Movie.title).all()
+
+    return render_template("movie_list.html", 
+                            movie_title_list = movie_title_list)
+
+    # Query to get a list of all movies
+    # Order them by title
+    # Pass list/tuple/whatever to page
+    # Jinja: for loop to create entries for each movie with year and constructed URL to to-be-made detail page
+
+
 
 @app.route('/logout')
 def logs_you_out():
