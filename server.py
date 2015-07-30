@@ -107,25 +107,27 @@ def make_movie_detail_page(movie_id):
 
 
 
-#add form to rate movie, 
-#check if user has rated, then update db
-#else add rating to db
-
 @app.route('/add-rating')
 def add_rating():
-    rating = int(request.args.get("rating"))
+    """ 
+        Updating database when user submits a new or updated rating.
+
+    """
+    rating = int(request.args.get("rating")) #Converted to an int to match format of db
     user_email = session["email"]
-    movie_id = int(request.args.get("movie_id"))
+    movie_id = int(request.args.get("movie_id")) #Converted to an int to match format of db
     user_id = db.session.query(User.user_id).filter(User.email == user_email).one()[0]
+    #Added an index number so we could actually access the single item in the returned tuple
+    #Do not put the movie ID in the session - this is a brittle solution. Used the tuple index instead.
 
     if "email" in session: 
         existing_rating = db.session.query(Rating).join(User).filter(User.email == user_email, Rating.movie_id == movie_id).first()
 
-        if existing_rating:
+        if existing_rating: #evaluates whether we got an empty list - if not, then db updates
             existing_rating.score = rating
             flash("New rating recorded! All updated!")
 
-        else: 
+        else: #else empty list, so new record that generates a new rating ID to go with this info
             new_rating = Rating(movie_id = movie_id, user_id = user_id, score = rating)
             db.session.add(new_rating)
             flash("Your rating has been added! Thanks for the data!")
@@ -135,7 +137,7 @@ def add_rating():
     else: 
         flash("You need to be logged in for that!")
     
-    return redirect('/movie/' + str(movie_id))
+    return redirect('/movie/' + str(movie_id)) #But had to make it a string again to fit format of concatenating URL constructor
 
 @app.route('/logout')
 def logs_you_out():
