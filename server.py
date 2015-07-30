@@ -103,18 +103,39 @@ def make_movie_detail_page(movie_id):
 
     ratings = db.session.query(Rating.score).filter_by(movie_id = movie_id).all()
 
-    return render_template("movie_details.html", movie_information=movie_information, ratings=ratings)
+    return render_template("movie_details.html", movie_information=movie_information, ratings=ratings, movie_id=movie_id)
 
 
 
-    # Get movie ID from URL
-    # Make loop in Python to create a crapton of movie pages using the movie ID
-    # Make reusable query to get movie information and its rating information
-    # Make Jinja framework 
-    # Show information plus all ratings the movie has received
+#add form to rate movie, 
+#check if user has rated, then update db
+#else add rating to db
 
+@app.route('/add-rating')
+def add_rating():
+    rating = int(request.args.get("rating"))
+    user_email = session["email"]
+    movie_id = int(request.args.get("movie_id"))
+    user_id = db.session.query(User.user_id).filter(User.email == user_email).one()[0]
 
+    if "email" in session: 
+        existing_rating = db.session.query(Rating).join(User).filter(User.email == user_email, Rating.movie_id == movie_id).first()
 
+        if existing_rating:
+            existing_rating.score = rating
+            flash("New rating recorded! All updated!")
+
+        else: 
+            new_rating = Rating(movie_id = movie_id, user_id = user_id, score = rating)
+            db.session.add(new_rating)
+            flash("Your rating has been added! Thanks for the data!")
+
+        db.session.commit()
+
+    else: 
+        flash("You need to be logged in for that!")
+    
+    return redirect('/movie/' + str(movie_id))
 
 @app.route('/logout')
 def logs_you_out():

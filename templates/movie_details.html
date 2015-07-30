@@ -4,6 +4,17 @@
 {% for movie in movie_information %}
     <h2>Details for: {{ movie.title }} </h2>
 
+      <p>What do you think of this movie? Tell us! Now!</p>
+      <form id="rate-movie" action="/add-rating">
+        <input type="radio" name="rating" value="1"><label>1 (ugh, terrible): </label><br>
+        <input type="radio" name="rating" value="2"><label>2: </label><br>
+        <input type="radio" name="rating" value="3"><label>3 (meh): </label><br>
+        <input type="radio" name="rating" value="4"><label>4: </label><br>
+        <input type="radio" name="rating" value="5"><label>5 (so good, so good): </label><br>
+        <input type="hidden" name="movie_id" value={{ movie_id }}>
+        <input type="submit" value="Rate it!">
+      </form>
+
       <p>{{ movie.title}} (Released: {{movie.release_date.year}})</p>
       <a href="{{ movie.imdb_url}}"> {{ movie.imdb_url}} </a>
       
