@@ -11,6 +11,7 @@
         <input type="radio" name="rating" value="4"><label>4: </label><br>
         <input type="radio" name="rating" value="5"><label>5 (so good, so good): </label><br>
         <input type="hidden" name="movie_id" value={{ movie_id }}>
+        <input type="hidden" name="effective_rating" value={{ effective_rating }}>
         <input type="submit" value="Rate it!" id="submit">
       </form>
 
@@ -28,11 +29,20 @@
       {% endfor %}
     </ul>
 
-{% endblock %}
-
-
 <script>
 
-$("#submit").on("click", function (evt) {$(".the-eye-hates").html("<h2>THE EYE SAYS:</h2> <p>{{ beratement }}</p>")};);
+function submitRating(evt) {
+  alert("It works! Sorta.");
+  evt.preventDefault();
+  $.post("/add-rating", $("#rate-movie").serializeArray(), showBeratement);
+}
+
+function showBeratement(result) {
+  $(".the-eye-hates").html("<h2>THE EYE SAYS:</h2> <p></p>");
+  console.log(result);
+}
+
+$("#rate-movie").on("submit", submitRating);
 
 </script>
+{% endblock %}

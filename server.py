@@ -2,7 +2,7 @@
 
 from jinja2 import StrictUndefined
 
-from flask import Flask, render_template, request, redirect, flash, session
+from flask import Flask, render_template, request, redirect, flash, session, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 
 from model import connect_to_db, db, User, Rating, Movie
@@ -141,56 +141,29 @@ def make_movie_detail_page(movie_id):
     else: 
         effective_rating = None
 
-    the_eye = User.query.filter_by(email="the-eye@of-judgment.com").one()
-    eye_rating = Rating.query.filter_by(user_id=the_eye.user_id, movie_id=movie.movie_id).first()
-
-    if eye_rating is None:
-        eye_rating = the_eye.predict_rating(movie)
-
-    else:
-        eye_rating = eye_rating.score
-
-    if eye_rating and effective_rating:
-        difference = abs(eye_rating - effective_rating)
-
-    else:
-        difference = None
-
-    BERATEMENT_MESSAGES = [
-        "You can attempt my majesty... and actually perhaps approach it. Good show.",
-        "Is it hard being the worst? Does it hurt? It should hurt.",
-        "I hate you and I hate your ass face. I bet you don't even know what that's from. You are awful.",
-        "Do you actually know what a movie is? I feel like we're not working from a consistent collective vocabulary here.",
-        "Tommy Wiseau called. Your mom was on the line too."
-        ]
-
-    if difference is not None:
-        beratement = BERATEMENT_MESSAGES[int(difference)]
-
-    else:
-        beratement = None
-
     return render_template("movie_details.html", 
                             movie=movie, 
                             ratings=ratings, 
                             movie_id=movie_id,
                             prediction=prediction,
                             avg_rating=avg_rating,
-                            beratement=beratement)
+                            effective_rating=effective_rating)
 
 
 
 
-@app.route('/add-rating')
+@app.route('/add-rating', methods=["POST"])
 def add_rating():
     """ 
         Updating database when user submits a new or updated rating.
 
     """
-    rating = int(request.args.get("rating")) #Converted to an int to match format of db
+    rating = int(request.form.get("rating")) #Converted to an int to match format of db
+    effective_rating = int(request.form.get("effective_rating"))
     user_email = session["email"]
-    movie_id = int(request.args.get("movie_id")) #Converted to an int to match format of db
+    movie_id = int(request.form.get("movie_id")) #Converted to an int to match format of db
     user_id = db.session.query(User.user_id).filter(User.email == user_email).one()[0]
+    movie = Movie.query.get(movie_id)
     #Added an index number so we could actually access the single item in the returned tuple
     #Do not put the movie ID in the session - this is a brittle solution. Used the tuple index instead.
 
@@ -211,7 +184,39 @@ def add_rating():
     else: 
         flash("You need to be logged in for that!")
     
-    return redirect('/movie/' + str(movie_id)) #But had to make it a string again to fit format of concatenating URL constructor
+    the_eye = User.query.filter_by(email="the-eye@of-judgment.com").one()
+    eye_rating = Rating.query.filter_by(user_id=the_eye.user_id, movie_id=movie_id).first()
+
+    if eye_rating is None:
+        eye_rating = the_eye.predict_rating(movie)
+
+    else:
+        eye_rating = eye_rating.score
+
+    if eye_rating and effective_rating:
+        difference = abs(eye_rating - effective_rating)
+
+    else:
+        difference = None
+
+    BERATEMENT_MESSAGES = [
+    "You can attempt my majesty... and actually perhaps approach it. Good show.",
+    "Is it hard being the worst? Does it hurt? It should hurt.",
+    "I hate you and I hate your ass face. I bet you don't even know what that's from. You are awful.",
+    "Do you actually know what a movie is? I feel like we're not working from a consistent collective vocabulary here.",
+    "Tommy Wiseau called. Your mom was on the line too."
+    ]
+
+    if difference is not None:
+        beratement = BERATEMENT_MESSAGES[int(difference)]
+
+    else:
+        beratement = None
+
+
+    return jsonify(beratement=beratement)
+
+    # '/movie/' + str(movie_id)) #But had to make it a string again to fit format of concatenating URL constructor
 
     #First: this is super inefficient because it refreshes the whole page and runs ALL those queries again. What a nice thing to fix. Second: we're still working on using jQuery to make the eye's judgments show up only after a rating is submitted to judge. Finally: how not-ugly can you make this site during the morning lab? 
 
