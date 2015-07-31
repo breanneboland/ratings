@@ -33,25 +33,44 @@ class User(db.Model):
         """ Return Pearson rating for the logged-in user as compard to another user.
         """
 
-        u_ratings = {}
+        current_user_ratings = {}
         paired_ratings = []
 
-        for r in self.ratings:
-            u_ratings[r.movie_id] = r.rating_id
+        for rating_object in self.ratings:
+            current_user_ratings[rating_object.movie_id] = rating_object
 
-        for r in other.ratings:
-            u_r = u_ratings.get(r.movie_id)
-            if u_r:
-                paired_ratings.append((u_r.score, r.score))
+        for other_rating_object in other.ratings:
+            user_rating = current_user_ratings.get(other_rating_object.movie_id)
+            if user_rating:
+                paired_ratings.append((user_rating.score, other_rating_object.score))
 
         if paired_ratings:
             return correlation.pearson(paired_ratings)
 
         else: 
             return 0.0
-        #Taken from the instructions. u = the user, our hero. r = the rating in question.
-        #Maybe after lunch, let's rename some variables, because buh.
-        #We're on step 4-5. Nothing of this has been called or used in any other file.
+
+    def predict_rating(self, movie):
+        """ Predict a user's rating of a movie using the best match available in the db.
+        """
+
+        other_ratings = movie.ratings
+
+        similarities = [
+            (self.similarity(rating_object.user), rating_object)
+            for rating_object in other_ratings]
+
+        similarities.sort(reverse=True)
+
+        similarities = [(sim_coeff, rating_object) for sim_coeff, rating_object in similarities if sim_coeff > 0]
+
+        if not similarities:
+            return None
+
+        numerator = sum([rating_object.score * sim_coeff for sim_coeff, rating_object in similarities])
+        denominator = sum([sim_coeff for sim_coeff, rating_object in similarities])
+
+        return numerator / denominator
 
 class Movie(db.Model):
     """table of movie information"""

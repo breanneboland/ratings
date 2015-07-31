@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
 
-{% for movie in movie_information %}
     <h2>Details for: {{ movie.title }} </h2>
 
       <p>What do you think of this movie? Tell us! Now!</p>
@@ -12,19 +11,28 @@
         <input type="radio" name="rating" value="4"><label>4: </label><br>
         <input type="radio" name="rating" value="5"><label>5 (so good, so good): </label><br>
         <input type="hidden" name="movie_id" value={{ movie_id }}>
-        <input type="submit" value="Rate it!">
+        <input type="submit" value="Rate it!" id="submit">
       </form>
 
       <p>{{ movie.title}} (Released: {{movie.release_date.year}})</p>
       <a href="{{ movie.imdb_url}}"> {{ movie.imdb_url}} </a>
       
+      <p>Our prediction for your rating: {{ prediction }}</p>
+      <p>Average rating for this movie: {{ avg_rating }}</p>
+      <div class="the-eye-hates"></div>
       <ul>Rating Scores:
          {% for rating in ratings %}
           <li>
               {{rating.score}}
           </li>
       {% endfor %}
-      {% endfor %}
     </ul>
 
 {% endblock %}
+
+
+<script>
+
+$("#submit").on("click", function (evt) {$(".the-eye-hates").html("<h2>THE EYE SAYS:</h2> <p>{{ beratement }}</p>")};);
+
+</script>

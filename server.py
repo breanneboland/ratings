@@ -45,6 +45,7 @@ def logs_you_in():
     email_value = request.form.get("email")
     password = request.form.get("password")
     user_query = User.query.filter_by(email = email_value).first()
+    user_id = user_query.user_id
     #Queries the User db to see if there's an email equal to the input from the user
     print user_query
     # print user_query.password
@@ -57,16 +58,21 @@ def logs_you_in():
         new_user = User(email=email_value, password=password)
         db.session.add(new_user)
         db.session.commit()
+
+        session['user_id'] = user_id
+
     else:
         if user_query.password == password:
             flash("You're logged in! Great!")
             session['email'] = email_value
+            session['user_id'] = user_id
+
         else: 
             flash("Password and login don't match. Try again!")
             return render_template('login.html')
     
-    user = User.query.filter_by(email = email_value).first()
-    user_id = user.user_id
+    # user = User.query.filter_by(email = email_value).first()
+    # user_id = user.user_id
     return redirect('users/' + str(user_id))
 
 #user_id is being correctly assigned. The problem is that it isn't being passed in a way that the URL
@@ -98,12 +104,80 @@ def list_movies():
 
 @app.route('/movie/<int:movie_id>')
 def make_movie_detail_page(movie_id):
-    
-    movie_information = db.session.query(Movie.title, Movie.release_date, Movie.imdb_url).filter_by(movie_id = movie_id).all() 
+    """ 
+    Adds movie information, current ratings, IMDB URL, and release date to each movie's detail page.
+    Also lets the user rate the movie, get a guess of wthat that rating might be (if they're logged in).
+    """
+    # movie_information = db.session.query(Movie.title, Movie.release_date, Movie.imdb_url).filter_by(movie_id = movie_id).all() 
 
     ratings = db.session.query(Rating.score).filter_by(movie_id = movie_id).all()
 
-    return render_template("movie_details.html", movie_information=movie_information, ratings=ratings, movie_id=movie_id)
+    movie = Movie.query.get(movie_id)
+
+    user_id = session.get("user_id")
+
+    if user_id:
+        user_rating = Rating.query.filter_by(movie_id=movie_id, user_id=user_id).first()
+
+    else:
+        user_rating = None
+
+    rating_scores = [r.score for r in movie.ratings]
+    avg_rating = float(sum(rating_scores)) / len(rating_scores)
+
+    prediction = None
+
+    if (not user_rating) and user_id:
+        user = User.query.get(user_id)
+        if user:
+            prediction = user.predict_rating(movie)
+
+    if prediction:
+        effective_rating = prediction
+
+    elif user_rating:
+        effective_rating = user_rating.score
+
+    else: 
+        effective_rating = None
+
+    the_eye = User.query.filter_by(email="the-eye@of-judgment.com").one()
+    eye_rating = Rating.query.filter_by(user_id=the_eye.user_id, movie_id=movie.movie_id).first()
+
+    if eye_rating is None:
+        eye_rating = the_eye.predict_rating(movie)
+
+    else:
+        eye_rating = eye_rating.score
+
+    if eye_rating and effective_rating:
+        difference = abs(eye_rating - effective_rating)
+
+    else:
+        difference = None
+
+    BERATEMENT_MESSAGES = [
+        "You can attempt my majesty... and actually perhaps approach it. Good show.",
+        "Is it hard being the worst? Does it hurt? It should hurt.",
+        "I hate you and I hate your ass face. I bet you don't even know what that's from. You are awful.",
+        "Do you actually know what a movie is? I feel like we're not working from a consistent collective vocabulary here.",
+        "Tommy Wiseau called. Your mom was on the line too."
+        ]
+
+    if difference is not None:
+        beratement = BERATEMENT_MESSAGES[int(difference)]
+
+    else:
+        beratement = None
+
+    return render_template("movie_details.html", 
+                            movie=movie, 
+                            ratings=ratings, 
+                            movie_id=movie_id,
+                            prediction=prediction,
+                            avg_rating=avg_rating,
+                            beratement=beratement)
+
 
 
 
@@ -138,6 +212,8 @@ def add_rating():
         flash("You need to be logged in for that!")
     
     return redirect('/movie/' + str(movie_id)) #But had to make it a string again to fit format of concatenating URL constructor
+
+    #First: this is super inefficient because it refreshes the whole page and runs ALL those queries again. What a nice thing to fix. Second: we're still working on using jQuery to make the eye's judgments show up only after a rating is submitted to judge. Finally: how not-ugly can you make this site during the morning lab? 
 
 @app.route('/logout')
 def logs_you_out():
